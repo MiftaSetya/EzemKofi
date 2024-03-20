@@ -78,8 +78,10 @@ class Cart : AppCompatActivity() {
                         finish()
                     }
                 } else if (code == 400) {
+                    var message = con.errorStream.bufferedReader().readText()
+                    Log.d("message", message)
                     GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(this@Cart, "Your cart is empty", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@Cart, "${message}", Toast.LENGTH_LONG).show()
                     }
                 } else if (code == 401) {
                     GlobalScope.launch(Dispatchers.Main) {
@@ -110,7 +112,7 @@ class Cart : AppCompatActivity() {
             val item = cartItems.getJSONObject(position)
 
             holder.binding.coffeeName.text = item.getString("name")
-            holder.binding.price.text = "$ ${item.getDouble("totalPrice")}"
+            holder.binding.price.text = "$ ${String.format("%.2f", item.getDouble("totalPrice"))}"
             holder.binding.size.text = "Size : ${item.getString("size")}"
             holder.binding.category.text = item.getString("category")
             holder.binding.itemCount.text = item.getInt("count").toString()

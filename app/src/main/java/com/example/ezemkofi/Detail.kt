@@ -2,6 +2,7 @@ package com.example.ezemkofi
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -28,6 +29,7 @@ class Detail : AppCompatActivity() {
     lateinit var binding: ActivityDetailBinding
     private var selectedSize = "M"
 
+    @SuppressLint("ResourceAsColor")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDetailBinding.inflate(layoutInflater)
@@ -41,42 +43,52 @@ class Detail : AppCompatActivity() {
             finish()
         }
 
+        selectedSize = "M"
+        setBackground()
+        binding.mBtn.setBackgroundResource(R.drawable.bg_btn)
+        binding.mBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
+
         binding.sBtn.setOnClickListener {
-            if(selectedSize == "S") {
+            if (selectedSize == "S") {
                 itemCount++
                 binding.itemCount.setText(itemCount.toString())
-            }
-            else
-            {
+
+            } else {
                 animtor(0.85f)
                 updatePrice(0.85f)
-                selectedSize = "S"
             }
+            setBackground()
+            selectedSize = "S"
+            binding.sBtn.setBackgroundResource(R.drawable.bg_btn)
+            binding.sBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
         }
 
         binding.mBtn.setOnClickListener {
-            if(selectedSize == "M") {
+            if (selectedSize == "M") {
                 itemCount++
                 binding.itemCount.setText(itemCount.toString())
-            }
-            else {
+            } else {
                 animtor(1f)
                 updatePrice(1f)
-                selectedSize = "M"
             }
+            setBackground()
+            selectedSize = "M"
+            binding.mBtn.setBackgroundResource(R.drawable.bg_btn)
+            binding.mBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
         }
 
         binding.lBtn.setOnClickListener {
-            if(selectedSize == "L") {
+            if (selectedSize == "L") {
                 itemCount++
                 binding.itemCount.setText(itemCount.toString())
-            }
-            else
-            {
+            } else {
                 animtor(1.15f)
                 updatePrice(1.15f)
-                selectedSize = "L"
             }
+            setBackground()
+            selectedSize = "L"
+            binding.lBtn.setBackgroundResource(R.drawable.bg_btn)
+            binding.lBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
         }
 
         binding.minBtn.setOnClickListener {
@@ -178,5 +190,14 @@ class Detail : AppCompatActivity() {
 
         val price = originalPrice * scaleFactor
         priceTV.text = "$ ${String.format("%.2f", price)}"
+    }
+
+    private fun setBackground() {
+        binding.sBtn.setBackgroundResource(R.drawable.bg_btn_unselect)
+        binding.sBtn.setTextColor(ContextCompat.getColor(this, R.color.EzemGreen))
+        binding.mBtn.setBackgroundResource(R.drawable.bg_btn_unselect)
+        binding.mBtn.setTextColor(ContextCompat.getColor(this, R.color.EzemGreen))
+        binding.lBtn.setBackgroundResource(R.drawable.bg_btn_unselect)
+        binding.lBtn.setTextColor(ContextCompat.getColor(this, R.color.EzemGreen))
     }
 }
