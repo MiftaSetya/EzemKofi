@@ -1,11 +1,13 @@
 package com.example.ezemkofi
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ezemkofi.databinding.ActivityHomeBinding
@@ -21,9 +23,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class Home : AppCompatActivity() {
+    private lateinit var binding: ActivityHomeBinding
+    private var selectedCategoryID: Int? = 4
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        var binding = ActivityHomeBinding.inflate(layoutInflater)
+        binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.searchBar.setOnClickListener {
@@ -73,63 +77,24 @@ class Home : AppCompatActivity() {
                         val item = category.getJSONObject(position)
 
                         holder.binding.category.text = item.getString("name")
+
+                        if (item.getInt("id") == selectedCategoryID) {
+                            holder.binding.root.setBackgroundResource(R.drawable.bg_category_selected)
+                            holder.binding.category.setTextColor(ContextCompat.getColor(this@Home, R.color.white))
+                        } else {
+                            holder.binding.root.setBackgroundResource(R.drawable.bg_category_unselected)
+                            holder.binding.category.setTextColor(ContextCompat.getColor(this@Home, R.color.EzemGray))
+                        }
+
+                        holder.binding.root.setOnClickListener {
+                            selectedCategoryID = item.getInt("id")
+                            notifyDataSetChanged()
+                            getCoffee(selectedCategoryID)
+                        }
                     }
                 }
                 binding.categoryRv.adapter = adapter
                 binding.categoryRv.layoutManager = LinearLayoutManager (this@Home, RecyclerView.HORIZONTAL, false)
-            }
-        }
-
-        class CoffeeViewHolder(val binding: ListCoffeeBinding) : RecyclerView.ViewHolder(binding.root)
-
-        GlobalScope.launch(Dispatchers.IO) {
-            val con = URL("http://10.0.2.2:5000/api/coffee").openConnection() as HttpURLConnection
-            con.requestMethod = "GET"
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
-            var coffee = JSONArray(con.inputStream.bufferedReader().readText())
-
-            GlobalScope.launch(Dispatchers.Main) {
-                var adapter = object : RecyclerView.Adapter<CoffeeViewHolder>() {
-                    override fun onCreateViewHolder(
-                        parent: ViewGroup,
-                        viewType: Int
-                    ): CoffeeViewHolder {
-                        val binding = ListCoffeeBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                        return CoffeeViewHolder(binding)
-                    }
-
-                    override fun getItemCount(): Int = coffee.length()
-
-                    override fun onBindViewHolder(holder: CoffeeViewHolder, position: Int) {
-                        var item = coffee.getJSONObject(position)
-
-                        holder.binding.coffeeName.text = item.getString("name")
-                        holder.binding.rating.text = item.getDouble("rating").toString()
-                        holder.binding.price.text = item.getDouble("price").toString()
-
-                        GlobalScope.launch(Dispatchers.IO) {
-                            val imagePath = URL("http://10.0.2.2:5000/images/${item.getString("imagePath")}").openConnection() as HttpURLConnection
-                            imagePath.setRequestProperty("Authorization", "Bearer ${Session.token}")
-
-                            val inputstream = imagePath.inputStream
-                            val imagebitmap = BitmapFactory.decodeStream(inputstream)
-
-                            runOnUiThread {
-                                holder.binding.image.setImageBitmap(imagebitmap)
-                            }
-                        }
-
-                        holder.itemView.setOnClickListener {
-                            val intent = Intent(this@Home, Detail::class.java).apply {
-                                putExtra("Id", item.getInt("id"))
-                                putExtra("price", item.getDouble("price"))
-                            }
-                            startActivity(intent)
-                        }
-                    }
-                }
-                binding.coffeeRv.adapter = adapter
-                binding.coffeeRv.layoutManager = LinearLayoutManager(this@Home, RecyclerView.HORIZONTAL, false)
             }
         }
 
@@ -183,6 +148,67 @@ class Home : AppCompatActivity() {
                 }
                 binding.topPickRv.adapter = adapter
                 binding.topPickRv.layoutManager = LinearLayoutManager(this@Home)
+            }
+        }
+
+        getCoffee(selectedCategoryID)
+    }
+
+    private fun getCoffee(Id: Int?) {
+        class CoffeeViewHolder(val binding: ListCoffeeBinding) : RecyclerView.ViewHolder(binding.root)
+
+        GlobalScope.launch(Dispatchers.IO) {
+            var url = "http://10.0.2.2:5000/api/coffee"
+            Id?.let {
+                url += "?coffeeCategoryID=${Id}"
+            }
+            val con = URL(url).openConnection() as HttpURLConnection
+            con.requestMethod = "GET"
+            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            var coffee = JSONArray(con.inputStream.bufferedReader().readText())
+
+            GlobalScope.launch(Dispatchers.Main) {
+                var adapter = object : RecyclerView.Adapter<CoffeeViewHolder>() {
+                    override fun onCreateViewHolder(
+                        parent: ViewGroup,
+                        viewType: Int
+                    ): CoffeeViewHolder {
+                        val binding = ListCoffeeBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                        return CoffeeViewHolder(binding)
+                    }
+
+                    override fun getItemCount(): Int = coffee.length()
+
+                    override fun onBindViewHolder(holder: CoffeeViewHolder, position: Int) {
+                        var item = coffee.getJSONObject(position)
+
+                        holder.binding.coffeeName.text = item.getString("name")
+                        holder.binding.rating.text = item.getDouble("rating").toString()
+                        holder.binding.price.text = item.getDouble("price").toString()
+
+                        GlobalScope.launch(Dispatchers.IO) {
+                            val imagePath = URL("http://10.0.2.2:5000/images/${item.getString("imagePath")}").openConnection() as HttpURLConnection
+                            imagePath.setRequestProperty("Authorization", "Bearer ${Session.token}")
+
+                            val inputstream = imagePath.inputStream
+                            val imagebitmap = BitmapFactory.decodeStream(inputstream)
+
+                            runOnUiThread {
+                                holder.binding.image.setImageBitmap(imagebitmap)
+                            }
+                        }
+
+                        holder.itemView.setOnClickListener {
+                            val intent = Intent(this@Home, Detail::class.java).apply {
+                                putExtra("Id", item.getInt("id"))
+                                putExtra("price", item.getDouble("price"))
+                            }
+                            startActivity(intent)
+                        }
+                    }
+                }
+                binding.coffeeRv.adapter = adapter
+                binding.coffeeRv.layoutManager = LinearLayoutManager(this@Home, RecyclerView.HORIZONTAL, false)
             }
         }
     }

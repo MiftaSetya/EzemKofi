@@ -64,7 +64,7 @@ class Search : AppCompatActivity() {
             }
         }
 
-        //Start
+        // Start
         super.onCreate(savedInstanceState)
         var binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -75,15 +75,11 @@ class Search : AppCompatActivity() {
 
         binding.searchBar.addTextChangedListener { text ->
             GlobalScope.launch(Dispatchers.IO) {
-                try {
-                    val con = URL("http://10.0.2.2:5000/api/coffee?search=$text").openStream().bufferedReader().readText()
-                    var hasil = JSONArray(con)
-                    runOnUiThread {
-                        binding.searchRv.adapter = SearchAdapter(hasil)
-                        binding.searchRv.layoutManager = LinearLayoutManager(this@Search)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val con = URL("http://10.0.2.2:5000/api/coffee?search=$text").openStream().bufferedReader().readText()
+                var hasil = JSONArray(con)
+                runOnUiThread {
+                    binding.searchRv.adapter = SearchAdapter(hasil)
+                    binding.searchRv.layoutManager = LinearLayoutManager(this@Search)
                 }
             }
         }
