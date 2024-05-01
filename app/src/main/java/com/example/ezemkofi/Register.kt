@@ -40,9 +40,6 @@ class Register : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            Log.d("pw", binding.passwordEt.text.toString())
-            Log.d("cpw", binding.confirmpasswordEt.text.toString())
-
             GlobalScope.launch(Dispatchers.IO) {
                 var con = URL("${Session.url}/api/register").openConnection() as HttpURLConnection
                 con.requestMethod = "POST"
@@ -67,7 +64,6 @@ class Register : AppCompatActivity() {
                         val intent = Intent(this@Register, Home::class.java)
 
                         startActivity(intent)
-                        Toast.makeText(this@Register, "Token : ${Session.token}", Toast.LENGTH_LONG).show()
                         finish()
                     }
                 }

@@ -28,6 +28,7 @@ class Cart : AppCompatActivity() {
     lateinit var binding: ActivityCartBinding
     lateinit var cartAdapter: CartAdapter
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var tokenSharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +36,8 @@ class Cart : AppCompatActivity() {
         setContentView(binding.root)
 
         sharedPreferences = getSharedPreferences("LOCAL", Context.MODE_PRIVATE)
+        tokenSharedPreferences = getSharedPreferences("JWT", Context.MODE_PRIVATE)
+        var token = tokenSharedPreferences.getString("token", "")
 
         binding.back.setOnClickListener {
             finish()
@@ -48,19 +51,21 @@ class Cart : AppCompatActivity() {
             GlobalScope.launch(Dispatchers.IO) {
                 var con = URL("${Session.url}/api/checkout").openConnection() as HttpURLConnection
                 con.requestMethod = "POST"
-                con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+                con.setRequestProperty("Authorization", "Bearer $token")
                 con.setRequestProperty("Content-Type", "application/json")
 
                 var cartData = JSONArray()
 
                 for (i in 0 until cartJson.length()) {
                     val item = cartJson.getJSONObject(i)
-                    val itemData = JSONObject()
-                    itemData.put("coffeeId", item.getInt("Id"))
-                    itemData.put("size", item.getString("size"))
-                    itemData.put("qty", item.getInt("count"))
+
+                    val itemData = JSONObject().apply {
+                        put("coffeeId", item.getInt("Id"))
+                        put("size", item.getString("size"))
+                        put("qty", cartAdapter.newCount)
+                    }
+
                     cartData.put(itemData)
-                    Log.d("data", cartData.toString())
                 }
 
                 val outputStream = con.outputStream
@@ -94,12 +99,14 @@ class Cart : AppCompatActivity() {
         val cart = sharedPreferences.getString("cart", "[]")
         val cartJson = JSONArray(cart)
 
-        cartAdapter = CartAdapter(cartJson, sharedPreferences)
+        cartAdapter = CartAdapter(cartJson, sharedPreferences, tokenSharedPreferences)
         binding.cartRV.adapter = cartAdapter
         binding.cartRV.layoutManager = LinearLayoutManager(this)
     }
 
-    class CartAdapter(private val cartItems: JSONArray, private val sharedPreferences: SharedPreferences) : RecyclerView.Adapter<CartAdapter.CartViewHolder>() {
+    class CartAdapter(private val cartItems: JSONArray, private val sharedPreferences: SharedPreferences, private val tokenSharedPreferences: SharedPreferences) : RecyclerView.Adapter<CartAdapter.CartViewHolder>() {
+        var token = tokenSharedPreferences.getString("token", "")
+        var newCount : Int? = null
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
@@ -121,7 +128,7 @@ class Cart : AppCompatActivity() {
             GlobalScope.launch(Dispatchers.IO) {
                 val image = item.getString("imagePath")
                 val imagePath = URL("${Session.url}/images/${image}").openConnection() as HttpURLConnection
-                imagePath.setRequestProperty("Authorization", "Bearer ${Session.token}")
+                imagePath.setRequestProperty("Authorization", "Bearer $token")
 
                 var inputStream = imagePath.inputStream
                 val imageBitmap = BitmapFactory.decodeStream(inputStream)
@@ -137,6 +144,7 @@ class Cart : AppCompatActivity() {
                 holder.binding.itemCount.setText(itemCount.toString())
                 var totalPrice = itemCount * pricePerItem
                 holder.binding.price.text = "$ ${String.format("%.2f", totalPrice)}"
+                newCount = itemCount
             }
 
             holder.binding.minBtn.setOnClickListener {
@@ -145,6 +153,7 @@ class Cart : AppCompatActivity() {
                     holder.binding.itemCount.text = itemCount.toString()
                     var totalPrice = itemCount * pricePerItem
                     holder.binding.price.text = "$ ${String.format("%.2f", totalPrice)}"
+                    newCount = itemCount
                 }
                 else
                 {

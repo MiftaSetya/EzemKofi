@@ -1,5 +1,6 @@
 package com.example.ezemkofi
 
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -27,7 +28,6 @@ class Login : AppCompatActivity() {
         }
 
         binding.loginBtn.setOnClickListener {
-
             if (binding.usernameEt.text.isNullOrEmpty() || binding.passwordEt.text.isNullOrEmpty()) {
                 Toast.makeText(this@Login, "Please fill all data", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
@@ -49,7 +49,14 @@ class Login : AppCompatActivity() {
 
                 if (code in 200 .. 209) {
                     var token = con.inputStream.bufferedReader().readText()
-                    Session.token = token
+
+                    // Session
+                    /*Session.token = token*/
+
+                    //Local Storage
+                    getSharedPreferences("JWT", Context.MODE_PRIVATE).edit().apply {
+                        putString("token", token)
+                    }.apply()
 
                     runOnUiThread {
                         val intent = Intent(this@Login, Home::class.java)

@@ -1,7 +1,9 @@
 package com.example.ezemkofi
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -25,10 +27,14 @@ import java.net.URL
 class Home : AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding
     private var selectedCategoryID: Int? = 4
+    private lateinit var sharedPreferences : SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        sharedPreferences = getSharedPreferences("JWT", Context.MODE_PRIVATE)
+        var token = sharedPreferences.getString("token", null)
 
         binding.searchBar.setOnClickListener {
             startActivity(Intent(this, Search::class.java))
@@ -40,7 +46,7 @@ class Home : AppCompatActivity() {
 
         GlobalScope.launch(Dispatchers.IO) {
             var con = URL("${Session.url}/api/me").openConnection() as HttpURLConnection
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            con.setRequestProperty("Authorization", "Bearer $token")
 
             var code = con.responseCode
 
@@ -58,7 +64,7 @@ class Home : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.IO) {
             val con = URL("http://10.0.2.2:5000/api/coffee-category").openConnection() as HttpURLConnection
             con.requestMethod = "GET"
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            con.setRequestProperty("Authorization", "Bearer $token")
             var category = JSONArray(con.inputStream.bufferedReader().readText())
 
             GlobalScope.launch(Dispatchers.Main) {
@@ -102,7 +108,7 @@ class Home : AppCompatActivity() {
 
         GlobalScope.launch(Dispatchers.IO) {
             var con = URL("http://10.0.2.2:5000/api/coffee/top-picks").openConnection() as HttpURLConnection
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            con.setRequestProperty("Authorization", "Bearer $token")
             var topPick = JSONArray(con.inputStream.bufferedReader().readText())
 
             GlobalScope.launch(Dispatchers.Main) {
@@ -157,14 +163,13 @@ class Home : AppCompatActivity() {
     private fun getCoffee(Id: Int?) {
         class CoffeeViewHolder(val binding: ListCoffeeBinding) : RecyclerView.ViewHolder(binding.root)
 
+        sharedPreferences = getSharedPreferences("JWT", Context.MODE_PRIVATE)
+        var token = sharedPreferences.getString("token", null)
+
         GlobalScope.launch(Dispatchers.IO) {
-            var url = "http://10.0.2.2:5000/api/coffee"
-            Id?.let {
-                url += "?coffeeCategoryID=${Id}"
-            }
-            val con = URL(url).openConnection() as HttpURLConnection
+            var con = URL("http://10.0.2.2:5000/api/coffee?coffeeCategoryID=${Id}").openConnection() as HttpURLConnection
             con.requestMethod = "GET"
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            con.setRequestProperty("Authorization", "Bearer $token")
             var coffee = JSONArray(con.inputStream.bufferedReader().readText())
 
             GlobalScope.launch(Dispatchers.Main) {

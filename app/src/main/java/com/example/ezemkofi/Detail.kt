@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -28,6 +29,8 @@ import java.net.URL
 class Detail : AppCompatActivity() {
     lateinit var binding: ActivityDetailBinding
     private var selectedSize = "M"
+    private var selectedPrice = 0.00
+    private lateinit var tokenSharedPreferences: SharedPreferences
 
     @SuppressLint("ResourceAsColor")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,8 +38,12 @@ class Detail : AppCompatActivity() {
         binding = ActivityDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        tokenSharedPreferences = getSharedPreferences("JWT", Context.MODE_PRIVATE)
+        var token = tokenSharedPreferences.getString("token", "")
+
         val Id = intent.getIntExtra("Id", 0).toString()
         var itemCount = binding.itemCount.text.toString().toInt()
+        var price = intent.getDoubleExtra("price", 0.00)
 
         binding.back.setOnClickListener {
             startActivity(Intent(this, Home::class.java))
@@ -44,6 +51,7 @@ class Detail : AppCompatActivity() {
         }
 
         selectedSize = "M"
+        selectedPrice = price * 1.0
         setBackground()
         binding.mBtn.setBackgroundResource(R.drawable.bg_btn)
         binding.mBtn.setTextColor(ContextCompat.getColor(this, R.color.white))
@@ -52,10 +60,10 @@ class Detail : AppCompatActivity() {
             if (selectedSize == "S") {
                 itemCount++
                 binding.itemCount.setText(itemCount.toString())
-
             } else {
                 animtor(0.85f)
                 updatePrice(0.85f)
+                selectedPrice = price * 0.85
             }
             setBackground()
             selectedSize = "S"
@@ -70,6 +78,7 @@ class Detail : AppCompatActivity() {
             } else {
                 animtor(1f)
                 updatePrice(1f)
+                selectedPrice = price * 1.0
             }
             setBackground()
             selectedSize = "M"
@@ -84,6 +93,7 @@ class Detail : AppCompatActivity() {
             } else {
                 animtor(1.15f)
                 updatePrice(1.15f)
+                selectedPrice = price * 1.15
             }
             setBackground()
             selectedSize = "L"
@@ -97,7 +107,7 @@ class Detail : AppCompatActivity() {
                 binding.itemCount.setText(itemCount.toString())
             }
             else {
-                Toast.makeText(this, "Item count can't less than 0", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Item count can't less than 1", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -108,7 +118,7 @@ class Detail : AppCompatActivity() {
 
         GlobalScope.launch(Dispatchers.IO) {
             var con = URL("${Session.url}/api/coffee/${Id}").openConnection() as HttpURLConnection
-            con.setRequestProperty("Authorization", "Bearer ${Session.token}")
+            con.setRequestProperty("Authorization", "Bearer $token")
             var detail = JSONObject(con.inputStream.bufferedReader().readText())
 
             runOnUiThread {
@@ -120,7 +130,7 @@ class Detail : AppCompatActivity() {
                 GlobalScope.launch(Dispatchers.IO) {
                     val image = detail.getString("imagePath")
                     val imagePath = URL("http://10.0.2.2:5000/images/${image}").openConnection() as HttpURLConnection
-                    imagePath.setRequestProperty("Authorization", "Bearer ${Session.token}")
+                    imagePath.setRequestProperty("Authorization", "Bearer $token")
 
                     val inputstream = imagePath.inputStream
                     val imagebitmap = BitmapFactory.decodeStream(inputstream)
@@ -139,7 +149,7 @@ class Detail : AppCompatActivity() {
                             val size = selectedSize
                             val count = binding.itemCount.text.toString().toInt()
                             val pricePerItem = detail.getDouble("price")
-                            val totalPrice = pricePerItem * count
+                            val totalPrice = selectedPrice * count
 
                             val itemCart = JSONObject().apply {
                                 put("Id", coffeeId)
@@ -152,11 +162,10 @@ class Detail : AppCompatActivity() {
                                 put("imagePath", imagePath)
                             }
 
-                            val cartArray = JSONArray(sharedPreferences.getString("cart", "[]"))
+                            var cart = sharedPreferences.getString("cart", "[]")
+                            val cartArray = JSONArray(cart)
 
                             cartArray.put(itemCart)
-
-                            Log.d("cart", cartArray.toString())
 
                             editor.putString("cart", cartArray.toString())
                             editor.apply()
